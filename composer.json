@@ -13,5 +13,8 @@
         "psr-4": {
             "Ebcms\\": "src/"
         }
+    },
+    "require": {
+        "psr/container": "^1.0"
     }
 }
