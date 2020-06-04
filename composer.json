@@ -1,0 +1,17 @@
+{
+    "name": "ebcms/psr11",
+    "description": "php psr11",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "ebcms",
+            "email": "1540847821@qq.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Ebcms\\": "src/"
+        }
+    }
+}
