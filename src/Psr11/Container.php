@@ -2,9 +2,9 @@
 
 namespace Ebcms\Psr11;
 
+use Ebcms\Psr11\Exception\ContainerException;
+use Ebcms\Psr11\Exception\NotFoundException;
 use Exception;
-use Psr11\Exception\ContainerException;
-use Psr11\Exception\NotFoundException;
 use Psr\Container\ContainerInterface;
 use ReflectionClass;
 use ReflectionMethod;
