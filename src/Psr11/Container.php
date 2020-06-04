@@ -60,10 +60,6 @@ class Container implements ContainerInterface
                 return $args[$name];
             }
 
-            if ($param->isDefaultValueAvailable()) {
-                return $param->getDefaultValue();
-            }
-
             $class = $param->getClass();
             if ($class !== null) {
                 if ($class->isInstantiable()) {
@@ -78,6 +74,10 @@ class Container implements ContainerInterface
                         }
                     }
                 }
+            }
+
+            if ($param->isDefaultValueAvailable()) {
+                return $param->getDefaultValue();
             }
 
             throw new Exception(sprintf(
