@@ -1,6 +1,6 @@
 <?php declare (strict_types = 1);
 
-namespace Psr11;
+namespace Ebcms\Psr11;
 
 use Exception;
 use Psr11\Exception\ContainerException;
