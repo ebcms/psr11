@@ -13,7 +13,8 @@ use Throwable;
 
 class Container implements ContainerInterface
 {
-    protected $items = [];
+    private $items = [];
+    private $caches = [];
 
     public function has($id): bool
     {
@@ -23,11 +24,19 @@ class Container implements ContainerInterface
         return class_exists($id);
     }
 
-    public function get($id, array $args = [])
+    public function get($id, bool $new = false, array $args = [])
     {
+        $cache_key = md5($id . serialize($args));
+        if (!$new) {
+            if (array_key_exists($cache_key, $this->caches)) {
+                return $this->caches[$cache_key];
+            }
+        }
         if (array_key_exists($id, $this->items)) {
             try {
-                return call_user_func($this->items[$id], $args);
+                $result = call_user_func($this->items[$id], $args);
+                $this->caches[$cache_key] = $result;
+                return $result;
             } catch (Throwable $th) {
                 throw new ContainerException($th->getMessage());
             }
@@ -36,7 +45,9 @@ class Container implements ContainerInterface
             try {
                 $reflector = new ReflectionClass($id);
                 $construct = $reflector->getConstructor();
-                return $reflector->newInstanceArgs($construct === null ? [] : $this->reflectArguments($construct, $args));
+                $result = $reflector->newInstanceArgs($construct === null ? [] : $this->reflectArguments($construct, $args));
+                $this->caches[$cache_key] = $result;
+                return $result;
             } catch (Throwable $th) {
                 throw new ContainerException($th->getMessage());
             }
