@@ -21,7 +21,13 @@ class Container implements ContainerInterface
         if (array_key_exists($id, $this->items)) {
             return true;
         }
-        return class_exists($id);
+        if (class_exists($id)) {
+            $reflector = new ReflectionClass($id);
+            if ($reflector->isInstantiable()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function get($id, bool $new = false, array $args = [])
@@ -73,17 +79,15 @@ class Container implements ContainerInterface
 
             $class = $param->getClass();
             if ($class !== null) {
+                if (array_key_exists($class->getName(), $this->items)) {
+                    $result = $this->get($class->getName());
+                    $class_name = $class->getName();
+                    if ($result instanceof $class_name) {
+                        return $result;
+                    }
+                }
                 if ($class->isInstantiable()) {
                     return $this->get($class->getName());
-                }
-                if ($class->isInterface() || $class->isAbstract()) {
-                    if (array_key_exists($class->getName(), $this->items)) {
-                        $result = $this->get($class->getName());
-                        $class_name = $class->getName();
-                        if ($result instanceof $class_name) {
-                            return $result;
-                        }
-                    }
                 }
             }
 
