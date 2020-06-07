@@ -2,14 +2,12 @@
 
 namespace Ebcms\Psr11;
 
-use Ebcms\Psr11\Exception\ContainerException;
 use Ebcms\Psr11\Exception\NotFoundException;
 use Exception;
 use Psr\Container\ContainerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionParameter;
-use Throwable;
 
 class Container implements ContainerInterface
 {
@@ -33,32 +31,28 @@ class Container implements ContainerInterface
 
     public function get($id)
     {
-        try {
-            if (in_array($id, $this->shares)) {
-                if (array_key_exists($id, $this->caches)) {
-                    return $this->caches[$id];
-                }
+        if (in_array($id, $this->shares)) {
+            if (array_key_exists($id, $this->caches)) {
+                return $this->caches[$id];
             }
-            if (array_key_exists($id, $this->items)) {
-                $result = call_user_func($this->items[$id]);
+        }
+        if (array_key_exists($id, $this->items)) {
+            $result = call_user_func($this->items[$id]);
+            if (in_array($id, $this->shares)) {
+                $this->caches[$id] = $result;
+            }
+            return $result;
+        }
+        if (class_exists($id)) {
+            $reflector = new ReflectionClass($id);
+            if ($reflector->isInstantiable()) {
+                $construct = $reflector->getConstructor();
+                $result = $reflector->newInstanceArgs($construct === null ? [] : $this->reflectArguments($construct));
                 if (in_array($id, $this->shares)) {
                     $this->caches[$id] = $result;
                 }
                 return $result;
             }
-            if (class_exists($id)) {
-                $reflector = new ReflectionClass($id);
-                if ($reflector->isInstantiable()) {
-                    $construct = $reflector->getConstructor();
-                    $result = $reflector->newInstanceArgs($construct === null ? [] : $this->reflectArguments($construct));
-                    if (in_array($id, $this->shares)) {
-                        $this->caches[$id] = $result;
-                    }
-                    return $result;
-                }
-            }
-        } catch (Throwable $th) {
-            throw new ContainerException($th->getMessage());
         }
         throw new NotFoundException(
             sprintf('Alias (%s) is not an existing class and therefore cannot be resolved', $id)
