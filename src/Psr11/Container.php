@@ -15,6 +15,7 @@ class Container implements ContainerInterface
 {
     private $items = [];
     private $caches = [];
+    private $shares = [];
 
     public function has($id): bool
     {
@@ -30,64 +31,69 @@ class Container implements ContainerInterface
         return false;
     }
 
-    public function get($id, bool $new = false, array $args = [])
+    public function get($id)
     {
-        $cache_key = md5($id . serialize($args));
-        if (!$new) {
-            if (array_key_exists($cache_key, $this->caches)) {
-                return $this->caches[$cache_key];
+        try {
+            if (in_array($id, $this->shares)) {
+                if (array_key_exists($id, $this->caches)) {
+                    return $this->caches[$id];
+                }
             }
-        }
-        if (array_key_exists($id, $this->items)) {
-            try {
-                $result = call_user_func($this->items[$id], $args);
-                $this->caches[$cache_key] = $result;
+            if (array_key_exists($id, $this->items)) {
+                $result = call_user_func($this->items[$id]);
+                if (in_array($id, $this->shares)) {
+                    $this->caches[$id] = $result;
+                }
                 return $result;
-            } catch (Throwable $th) {
-                throw new ContainerException($th->getMessage());
             }
-        }
-        if (class_exists($id)) {
-            try {
+            if (class_exists($id)) {
                 $reflector = new ReflectionClass($id);
-                $construct = $reflector->getConstructor();
-                $result = $reflector->newInstanceArgs($construct === null ? [] : $this->reflectArguments($construct, $args));
-                $this->caches[$cache_key] = $result;
-                return $result;
-            } catch (Throwable $th) {
-                throw new ContainerException($th->getMessage());
+                if ($reflector->isInstantiable()) {
+                    $construct = $reflector->getConstructor();
+                    $result = $reflector->newInstanceArgs($construct === null ? [] : $this->reflectArguments($construct));
+                    if (in_array($id, $this->shares)) {
+                        $this->caches[$id] = $result;
+                    }
+                    return $result;
+                }
             }
+        } catch (Throwable $th) {
+            throw new ContainerException($th->getMessage());
         }
         throw new NotFoundException(
             sprintf('Alias (%s) is not an existing class and therefore cannot be resolved', $id)
         );
     }
 
-    public function set(string $id, callable $callback): self
+    public function set(string $id, callable $callback, bool $share = true): self
     {
         $this->items[$id] = $callback;
+        if ($share) {
+            $this->share($id);
+        }
         return $this;
     }
 
-    private function reflectArguments(ReflectionMethod $method, array $args = []): array
+    public function share($id): self
     {
-        return array_map(function (ReflectionParameter $param) use ($method, $args) {
-            $name = $param->getName();
-            if (array_key_exists($name, $args)) {
-                return $args[$name];
-            }
+        if (!in_array($id, $this->shares)) {
+            $this->shares[] = $id;
+        }
+        return $this;
+    }
+
+    private function reflectArguments(ReflectionMethod $method): array
+    {
+        return array_map(function (ReflectionParameter $param) use ($method) {
 
             $class = $param->getClass();
             if ($class !== null) {
-                if (array_key_exists($class->getName(), $this->items)) {
+                if ($this->has($class->getName())) {
                     $result = $this->get($class->getName());
                     $class_name = $class->getName();
                     if ($result instanceof $class_name) {
                         return $result;
                     }
-                }
-                if ($class->isInstantiable()) {
-                    return $this->get($class->getName());
                 }
             }
 
@@ -97,7 +103,7 @@ class Container implements ContainerInterface
 
             throw new Exception(sprintf(
                 'Unable to resolve a value for parameter (%s) in the %s::%s',
-                $name,
+                $param->getName(),
                 $method->getDeclaringClass()->getName(),
                 $method->getName()
             ));
