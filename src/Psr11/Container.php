@@ -13,7 +13,7 @@ class Container implements ContainerInterface
 {
     private $items = [];
     private $caches = [];
-    private $shares = [];
+    private $no_shares = [];
 
     public function has($id): bool
     {
@@ -31,14 +31,12 @@ class Container implements ContainerInterface
 
     public function get($id)
     {
-        if (in_array($id, $this->shares)) {
-            if (array_key_exists($id, $this->caches)) {
-                return $this->caches[$id];
-            }
+        if (array_key_exists($id, $this->caches)) {
+            return $this->caches[$id];
         }
         if (array_key_exists($id, $this->items)) {
             $result = call_user_func($this->items[$id]);
-            if (in_array($id, $this->shares)) {
+            if (!in_array($id, $this->no_shares)) {
                 $this->caches[$id] = $result;
             }
             return $result;
@@ -48,7 +46,7 @@ class Container implements ContainerInterface
             if ($reflector->isInstantiable()) {
                 $construct = $reflector->getConstructor();
                 $result = $reflector->newInstanceArgs($construct === null ? [] : $this->reflectArguments($construct));
-                if (in_array($id, $this->shares)) {
+                if (!in_array($id, $this->no_shares)) {
                     $this->caches[$id] = $result;
                 }
                 return $result;
@@ -59,19 +57,19 @@ class Container implements ContainerInterface
         );
     }
 
-    public function set(string $id, callable $callback, bool $share = true): self
+    public function set(string $id, callable $callback, bool $no_share = false): self
     {
         $this->items[$id] = $callback;
-        if ($share) {
-            $this->share($id);
+        if ($no_share) {
+            $this->noShare($id);
         }
         return $this;
     }
 
-    public function share($id): self
+    public function noShare($id): self
     {
-        if (!in_array($id, $this->shares)) {
-            $this->shares[] = $id;
+        if (!in_array($id, $this->no_shares)) {
+            $this->no_shares[] = $id;
         }
         return $this;
     }
