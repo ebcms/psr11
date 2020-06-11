@@ -1,8 +1,7 @@
 <?php declare (strict_types = 1);
 
-namespace Ebcms\Psr11;
+namespace Ebcms;
 
-use Ebcms\Psr11\Exception\NotFoundException;
 use Exception;
 use Psr\Container\ContainerInterface;
 use ReflectionClass;
@@ -52,7 +51,7 @@ class Container implements ContainerInterface
                 return $result;
             }
         }
-        throw new NotFoundException(
+        throw new ContainerNotFoundException(
             sprintf('Alias (%s) is not an existing class and therefore cannot be resolved', $id)
         );
     }

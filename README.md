@@ -11,7 +11,7 @@ composer require ebcms/psr11
 ## Usage
 
 ``` php
-$container = new \Ebcms\Psr11\Container();
+$container = new \Ebcms\Container();
 
 $container->set('test', function(){
     return 'bar';
