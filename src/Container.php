@@ -2,7 +2,7 @@
 
 namespace Ebcms;
 
-use Exception;
+use OutOfBoundsException;
 use Psr\Container\ContainerInterface;
 use ReflectionClass;
 use ReflectionMethod;
@@ -92,11 +92,10 @@ class Container implements ContainerInterface
                 return $param->getDefaultValue();
             }
 
-            throw new Exception(sprintf(
-                'Unable to resolve a value for parameter (%s) in the %s::%s',
-                $param->getName(),
-                $method->getDeclaringClass()->getName(),
-                $method->getName()
+            throw new OutOfBoundsException(sprintf(
+                'Unable to resolve a value for parameter (%s $%s)',
+                $param->getType(),
+                $param->getName()
             ));
         }, $method->getParameters());
     }
