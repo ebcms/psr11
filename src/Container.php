@@ -59,6 +59,7 @@ class Container implements ContainerInterface
     public function set(string $id, callable $callback, bool $no_share = false): self
     {
         $this->items[$id] = $callback;
+        unset($this->caches[$id]);
         if ($no_share) {
             $this->noShare($id);
         }
@@ -67,6 +68,7 @@ class Container implements ContainerInterface
 
     public function noShare($id): self
     {
+        unset($this->caches[$id]);
         if (!in_array($id, $this->no_shares)) {
             $this->no_shares[] = $id;
         }
