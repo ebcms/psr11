@@ -1,4 +1,6 @@
-<?php declare (strict_types = 1);
+<?php
+
+declare(strict_types=1);
 
 namespace Ebcms;
 
@@ -79,12 +81,12 @@ class Container implements ContainerInterface
     {
         return array_map(function (ReflectionParameter $param) use ($method) {
 
-            $class = $param->getClass();
-            if ($class !== null) {
-                if ($this->has($class->getName())) {
-                    $result = $this->get($class->getName());
-                    $class_name = $class->getName();
-                    if ($result instanceof $class_name) {
+            $type = $param->getType();
+            if ($type !== null && !$type->isBuiltin()) {
+                if ($this->has($type->getName())) {
+                    $result = $this->get($type->getName());
+                    $type_name = $type->getName();
+                    if ($result instanceof $type_name) {
                         return $result;
                     }
                 }
