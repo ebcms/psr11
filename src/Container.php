@@ -21,8 +21,7 @@ class Container implements ContainerInterface
         if (array_key_exists($id, $this->items)) {
             return true;
         }
-        if (class_exists($id)) {
-            $reflector = new ReflectionClass($id);
+        if ($reflector = $this->getReflectionClass($id)) {
             if ($reflector->isInstantiable()) {
                 return true;
             }
@@ -42,8 +41,7 @@ class Container implements ContainerInterface
             }
             return $result;
         }
-        if (class_exists($id)) {
-            $reflector = new ReflectionClass($id);
+        if ($reflector = $this->getReflectionClass($id)) {
             if ($reflector->isInstantiable()) {
                 $construct = $reflector->getConstructor();
                 $result = $reflector->newInstanceArgs($construct === null ? [] : $this->reflectArguments($construct));
@@ -75,6 +73,19 @@ class Container implements ContainerInterface
             $this->no_shares[] = $id;
         }
         return $this;
+    }
+
+    private function getReflectionClass($id): ?ReflectionClass
+    {
+        static $reflectors = [];
+        if (!isset($reflectors[$id])) {
+            if (class_exists($id)) {
+                $reflectors[$id] = new ReflectionClass($id);
+            } else {
+                return null;
+            }
+        }
+        return $reflectors[$id];
     }
 
     private function reflectArguments(ReflectionMethod $method): array
