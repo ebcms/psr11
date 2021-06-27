@@ -16,7 +16,7 @@ class Container implements ContainerInterface
     private $caches = [];
     private $no_shares = [];
 
-    public function has($id): bool
+    public function has(string $id): bool
     {
         if (array_key_exists($id, $this->items)) {
             return true;
@@ -29,7 +29,7 @@ class Container implements ContainerInterface
         return false;
     }
 
-    public function get($id)
+    public function get(string $id)
     {
         if (array_key_exists($id, $this->caches)) {
             return $this->caches[$id];
@@ -66,7 +66,7 @@ class Container implements ContainerInterface
         return $this;
     }
 
-    public function noShare($id): self
+    public function noShare(string $id): self
     {
         unset($this->caches[$id]);
         if (!in_array($id, $this->no_shares)) {
@@ -75,7 +75,7 @@ class Container implements ContainerInterface
         return $this;
     }
 
-    private function getReflectionClass($id): ?ReflectionClass
+    private function getReflectionClass(string $id): ?ReflectionClass
     {
         static $reflectors = [];
         if (!isset($reflectors[$id])) {
