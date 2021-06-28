@@ -106,6 +106,10 @@ class Container implements ContainerInterface
                 return $param->getDefaultValue();
             }
 
+            if ($param->isOptional()) {
+                return;
+            }
+
             throw new OutOfBoundsException(sprintf(
                 'Unable to resolve a value for parameter (%s $%s) in [%s] method:[%s]',
                 $param->getType()->getName(),
