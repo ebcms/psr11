@@ -91,7 +91,6 @@ class Container implements ContainerInterface
     private function reflectArguments(ReflectionMethod $method): array
     {
         return array_map(function (ReflectionParameter $param) use ($method) {
-
             $type = $param->getType();
             if ($type !== null && !$type->isBuiltin()) {
                 if ($this->has($type->getName())) {
@@ -108,9 +107,11 @@ class Container implements ContainerInterface
             }
 
             throw new OutOfBoundsException(sprintf(
-                'Unable to resolve a value for parameter (%s $%s)',
-                $param->getType(),
-                $param->getName()
+                'Unable to resolve a value for parameter (%s $%s) in [%s] method:[%s]',
+                $param->getType()->getName(),
+                $param->getName(),
+                $method->getFileName(),
+                $method->getName(),
             ));
         }, $method->getParameters());
     }
