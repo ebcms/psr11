@@ -12,13 +12,14 @@ use ReflectionParameter;
 
 class Container implements ContainerInterface
 {
-    private $items = [];
-    private $caches = [];
-    private $no_shares = [];
+    private $item_list = [];
+    private $item_cache_list = [];
+    private $no_share_list = [];
+    private $callback_list = [];
 
     public function has(string $id): bool
     {
-        if (array_key_exists($id, $this->items)) {
+        if (array_key_exists($id, $this->item_list)) {
             return true;
         }
         if ($reflector = $this->getReflectionClass($id)) {
@@ -31,13 +32,16 @@ class Container implements ContainerInterface
 
     public function get(string $id)
     {
-        if (array_key_exists($id, $this->caches)) {
-            return $this->caches[$id];
+        if (array_key_exists($id, $this->item_cache_list)) {
+            return $this->item_cache_list[$id];
         }
-        if (array_key_exists($id, $this->items)) {
-            $result = call_user_func($this->items[$id]);
-            if (!in_array($id, $this->no_shares)) {
-                $this->caches[$id] = $result;
+        if (array_key_exists($id, $this->item_list)) {
+            $result = call_user_func($this->item_list[$id]);
+            if (isset($this->callback_list[$id])) {
+                call_user_func($this->callback_list[$id], $result);
+            }
+            if (!in_array($id, $this->no_share_list)) {
+                $this->item_cache_list[$id] = $result;
             }
             return $result;
         }
@@ -45,8 +49,11 @@ class Container implements ContainerInterface
             if ($reflector->isInstantiable()) {
                 $construct = $reflector->getConstructor();
                 $result = $reflector->newInstanceArgs($construct === null ? [] : $this->reflectArguments($construct));
-                if (!in_array($id, $this->no_shares)) {
-                    $this->caches[$id] = $result;
+                if (isset($this->callback_list[$id])) {
+                    call_user_func($this->callback_list[$id], $result);
+                }
+                if (!in_array($id, $this->no_share_list)) {
+                    $this->item_cache_list[$id] = $result;
                 }
                 return $result;
             }
@@ -58,8 +65,8 @@ class Container implements ContainerInterface
 
     public function set(string $id, callable $callback, bool $no_share = false): self
     {
-        $this->items[$id] = $callback;
-        unset($this->caches[$id]);
+        $this->item_list[$id] = $callback;
+        unset($this->item_cache_list[$id]);
         if ($no_share) {
             $this->noShare($id);
         }
@@ -68,11 +75,16 @@ class Container implements ContainerInterface
 
     public function noShare(string $id): self
     {
-        unset($this->caches[$id]);
-        if (!in_array($id, $this->no_shares)) {
-            $this->no_shares[] = $id;
+        unset($this->item_cache_list[$id]);
+        if (!in_array($id, $this->no_share_list)) {
+            $this->no_share_list[] = $id;
         }
         return $this;
+    }
+
+    public function callback(string $id, callable $callback)
+    {
+        $this->callback_list[$id] = $callback;
     }
 
     private function getReflectionClass(string $id): ?ReflectionClass
